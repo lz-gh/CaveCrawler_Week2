@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
+
+/******************************  Tab Aesthetics *******************************/
+.tabbable > .nav > li > a {
+        background-color: maroon;
+        border-color: grey;
+        color: white;
+}
+.tabbable > .nav > li[class=active] > a {
+        background-color: #ADD8E6;
+        border-color: black;
+        color: black;
+}
+
+.tabbable > .nav > li > a:hover {
+        background-color: #CBC3E3;
+        border-color: magenta;
+        color: yellow;
+}
+/*************************  Action Button Aesthetics **************************/
+
+#action_button_1 {
+        background-color: pink;
+        border-color: #ADD8E6;
+        color: yellow;
+}
+
+/************************* Title **********************/
+
+h1 {
+font-family: 'Special Elite', Arial;
+
+text-align: center;
+
+color: #e4867e;
+
+font-style:italic;
+
+font-weight: bold;
+
+text-decoration: underline;
+
+background:url(images/headline_back.jpg) top left no-repeat;
+
+padding-top:5px;
+
+height: 53px;
+
+font-size:30px;
+
+letter-spacing:5px;
+
+margin:30px 0 20px 0;
+
+border: 10px, solid;
+
+}
