@@ -30,60 +30,144 @@ ui = fluidPage(
          uiOutput("minmax_updater"),
         ),
         mainPanel(id = "main",
-                  "Plots and data from table to be shown here",
+                  "IMPORTANT: just select at least two populations",
+                  br(),
+                  plotOutput('wvplot_1'),
+                  tableOutput('react_tableout1'),
+                  downloadButton(
+                    outputId = "download_this1",
+                    label = "Click to Download",
+                    class = "download"
+                  )
         )
       )
     ),
     tabPanel(
       title = "Select by Morph",
       fluid = TRUE,
-      sidebarLayout(
-        sidebarPanel(
-          id = "sidebar1",
-          checkboxGroupInput(
-            inputId = "morph_checkbox",
-            label = "Select morph in database",
-            choices = c("Cave", "Surface"),
-            tableOutput("table_out")
+      fluidRow(
+         column(
+           width = 2,
+           checkboxGroupInput(
+           inputId = "morph_checkbox",
+           label = "Select morph in database",
+           choices = c("Cave", "Surface"),
+           tableOutput("table_out")
           ),
           # uiOutput("minmax_updater"),
         ),
-        mainPanel(id = "main",
-                  "Plots and data from table to be shown here",
-                  br(),
-                  actionButton(
-                    inputId = "action_button_1",
-                    label = "Action Button!"),
-                  conditionalPanel(
-                    condition = "input.action_button_1 == true",
-                      "Haven't decided on its function, but here's the skeleton"
-                  )
+        column(
+          width = 6,
+          "IMPORTANT: Make a selection to display plot.",
+          br(),
+          plotOutput('wvplot_2'),
+          # action button to display image
+          actionButton(
+            inputId = "action_button_1",
+            label = "Action Button!"),
+          conditionalPanel(
+            condition = "input.action_button_1 == true",
+            img(src = 'smashing_pumpkins.jpg')
+          )
+        ),
+        column(
+          width = 4,
+          tableOutput('react_tableout2'),
+          downloadButton(
+            outputId = "download_this2",
+            label = "Click to Download",
+            class = "download"
+            )
         )
+      )
     )
-   )
   )
 )
 
 server = function (input, output) {
-  read.csv <- "PopulationLocations.csv"
+  
+  table_population <- read.csv("PopulationLocations.csv")
+  
   output$minmax_updater <- renderUI({
     lats <- table_population$Latitude
     
     min.lat <- round(min(lats), 2)
     max.lat <- round(max(lats), 2)
     
-    sliderInput("min_latitude", "reactive threshold:", 
+    sliderInput("min_latitude", "Latitude Threshold", 
                 min = min.lat, 
                 max = max.lat, value = 22.5, step = 0.05)
   })
   
-  table_population <- read.csv("PopulationLocations.csv")
-  
+
   # Output only the entries of table_name whose latitude is ABOVE the value
   # inputted into the slider
   output$table_out <- renderTable({
     table_population[table_population$Latitude > input$min_latitude, ]
   })
+  
+
+  #a reactive data frame based on population checkboxes
+  pop_data1 <- reactive({
+    new_data <- table_population[table_population$Population %in% input$population_checkbox,]
+    return(new_data)
+  })
+  #outputs table based off of new_data
+  output$react_tableout1 <- renderTable(req(pop_data1()))
+  #data frame that includes only a vector of latitude strings to be read by wvplot
+  test_df <- data.frame(
+    Latitude <- table_population$Latitude
+  )
+  #WVPlot
+  output$wvplot_1 <- renderPlot(
+    ShadedDensity(
+      frame = pop_data1(), #uses new reactive data
+      xvar = 'Latitude',  #uses string vector of latitudes.
+      tail = 'right',
+      threshold = input$min_latitude,
+      title = 'Density of Populations at Latitudes',
+      shading = 'maroon'
+   )
+  )
+  
+  #reactive data for tab 2
+  pop_data2 <- reactive({
+    new_data <- table_population[table_population$Morph %in% input$morph_checkbox,]
+    return(new_data)
+  })
+  #table for tab 2
+  output$react_tableout2 <- renderTable(req(pop_data2()))
+  # wvplot for tab 2
+  output$wvplot_2 <- renderPlot( 
+    ShadedDensity(
+      frame = pop_data2(), #uses new reactive data
+      xvar = 'Latitude',  #uses string vector of latitudes.
+      threshold = input$min_latitude,
+      tail = 'right',
+      title = 'Density of Morphs at Latitudes',
+      shading = 'maroon'
+    )
+  )
+  
+  #download button for tab 1
+  output$download_this1 <- downloadHandler(
+    filename = function(){
+      paste("Tab1_download_",Sys.Date(),".csv", sep = '')
+    },
+    content = function(file){
+      write.csv(pop_data1(), file, row.names = FALSE)
+    }
+  )
+  
+  #download button for tab 2
+  output$download_this2 <- downloadHandler(
+    filename = function(){
+      paste("Tab2_download_",Sys.Date(),".csv", sep = '')
+    },
+    content = function(file){
+      write.csv(pop_data2(), file, row.names = FALSE)
+    }
+  )
 }
 
 shinyApp (ui = ui, server = server)
