@@ -1,6 +1,8 @@
 library(shiny)
 library(WVPlots)
 library(shinyWidgets)
+# Annabel Edit: added this so I can output an empty plot - see code for reason
+library(ggplot2)
 
 ui = fluidPage(
   
@@ -27,20 +29,22 @@ ui = fluidPage(
                      "Tinaja","Toro","Yerbaniz"),
          tableOutput("table_out")
          ),
-         uiOutput("minmax_updater"),
+         uiOutput("minmax_updater")
         ),
         mainPanel(id = "main",
-                  "IMPORTANT: just select at least two populations",
                   br(),
+                  conditionalPanel(condition = "input.population_checkbox.length < 2",
+                                   "ERROR: Must input at least two populations"
+                  ),
                   plotOutput('wvplot_1'),
                   tableOutput('react_tableout1'),
                   downloadButton(
                     outputId = "download_this1",
                     label = "Click to Download",
                     class = "download"
+                    )
                   )
         )
-      )
     ),
     tabPanel(
       title = "Select by Morph",
@@ -106,29 +110,39 @@ server = function (input, output) {
     table_population[table_population$Latitude > input$min_latitude, ]
   })
   
-
-  #a reactive data frame based on population checkboxes
-  pop_data1 <- reactive({
-    new_data <- table_population[table_population$Population %in% input$population_checkbox,]
-    return(new_data)
-  })
-  #outputs table based off of new_data
-  output$react_tableout1 <- renderTable(req(pop_data1()))
-  #data frame that includes only a vector of latitude strings to be read by wvplot
-  test_df <- data.frame(
-    Latitude <- table_population$Latitude
-  )
-  #WVPlot
-  output$wvplot_1 <- renderPlot(
-    ShadedDensity(
-      frame = pop_data1(), #uses new reactive data
-      xvar = 'Latitude',  #uses string vector of latitudes.
-      tail = 'right',
-      threshold = input$min_latitude,
-      title = 'Density of Populations at Latitudes',
-      shading = 'maroon'
-   )
-  )
+  
+  # Annabel Edit: To improve user friendliness AND to enhance computational
+  # efficiency, I made it so the plot and table are only outputted if at least
+  # 2 populations are selected. If less than two populations are selected, we 
+  # must output an empty plot and table so the UI side is not drawing upon 
+  # non-existent objects
+  
+    #a reactive data frame based on population checkboxes
+    pop_data1 <- reactive({
+      if(length(input$population_checkbox) >= 2){
+        new_data <- table_population[table_population$Population %in% input$population_checkbox,]
+        return(new_data)
+      }else{
+        data.frame()
+      }
+    })
+    #outputs table based off of new_data
+    output$react_tableout1 <- renderTable(req(pop_data1()))
+    
+    output$wvplot_1 <- renderPlot({
+      if(length(input$population_checkbox) >= 2){
+        ShadedDensity(
+          frame = pop_data1(), #uses new reactive data
+          xvar = 'Latitude',  #uses string vector of latitudes.
+          tail = 'right',
+          threshold = input$min_latitude,
+          title = 'Density of Populations at Latitudes',
+          shading = 'maroon'
+        )
+      }else{
+        ggplot()
+      }
+    })
   
   #reactive data for tab 2
   pop_data2 <- reactive({
