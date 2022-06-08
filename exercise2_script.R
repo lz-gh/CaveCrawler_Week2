@@ -32,10 +32,10 @@ ui = fluidPage(
          uiOutput("minmax_updater")
         ),
         mainPanel(id = "main",
-                  br(),
                   conditionalPanel(condition = "input.population_checkbox.length < 2",
                                    "ERROR: Must input at least two populations"
                   ),
+                  br(),
                   plotOutput('wvplot_1'),
                   tableOutput('react_tableout1'),
                   downloadButton(
@@ -62,7 +62,9 @@ ui = fluidPage(
         ),
         column(
           width = 6,
-          "IMPORTANT: Make a selection to display plot.",
+          conditionalPanel(condition = "input.morph_checkbox.length < 1",
+                           "ERROR: Must make a selection"
+          ),
           br(),
           plotOutput('wvplot_2'),
           # action button to display image
@@ -146,14 +148,20 @@ server = function (input, output) {
   
   #reactive data for tab 2
   pop_data2 <- reactive({
-    new_data <- table_population[table_population$Morph %in% input$morph_checkbox,]
-    return(new_data)
+    if(length(input$morph_checkbox) >= 1){
+      new_data <- table_population[table_population$Morph %in% input$morph_checkbox,]
+      return(new_data) 
+    }else{
+      data.frame()
+    }
+    
   })
   #table for tab 2
   output$react_tableout2 <- renderTable(req(pop_data2()))
   # wvplot for tab 2
-  output$wvplot_2 <- renderPlot( 
-    ShadedDensity(
+  output$wvplot_2 <- renderPlot({
+    if(length(input$morph_checkbox) >= 1){
+      ShadedDensity(
       frame = pop_data2(), #uses new reactive data
       xvar = 'Latitude',  #uses string vector of latitudes.
       threshold = input$min_latitude,
@@ -161,6 +169,12 @@ server = function (input, output) {
       title = 'Density of Morphs at Latitudes',
       shading = 'maroon'
     )
+      
+    }else{
+      ggplot()
+    }
+  } 
+    
   )
   
   #download button for tab 1
